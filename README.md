@@ -1,4 +1,4 @@
-# Internal DevOps Utilities API
+# Internal DevOps Utilities API | Python , FastAPI, AWS
 
 ## Aim 
 This project aims to deliver Production grade Utilities APIs to internal teams 
