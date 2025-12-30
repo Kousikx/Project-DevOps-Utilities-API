@@ -11,10 +11,13 @@ Usage
 'git clone <>'
 
 setup python environment
+
 python3.14 -m venv venv source venv/bin/activate
 
 install requirements
+
 pip install -r requirements.txt
 
 run application
+
 python main.py
