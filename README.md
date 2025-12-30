@@ -7,14 +7,14 @@ This project aims to deliver Production grade Utilities APIs to internal teams
 - Log Analysis 
 
 
-##Usage
+## Usage
 'git clone <>'
 
-##setup python environment
+## Setup python environment
 python3.14 -m venv venv source venv/bin/activate
 
-##install requirements
+## Install requirements
 pip install -r requirements.txt
 
-##run application
+## Run application
 python main.py
