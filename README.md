@@ -18,3 +18,12 @@ pip install -r requirements.txt
 
 ## Run application
 python main.py
+
+
+
+
+
+
+
+
+
