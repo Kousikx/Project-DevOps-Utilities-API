@@ -63,7 +63,7 @@ jobs:
       - name: Update README
         run: |
           TODAY_HUMAN=$(date +"%d %b %Y")
-          sed -i "30s/.*/Last updated on $TODAY_HUMAN/" README.md
+          sed -i "30s/.*/No updates so far as of $TODAY_HUMAN/" README.md
 
       - name: Record execution date
         if: github.event_name == 'schedule'
