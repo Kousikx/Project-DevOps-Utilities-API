@@ -1,11 +1,12 @@
-name: Update
+name: Update README (Random Time)
 
 permissions:
   contents: write
 
 on:
   schedule:
-    - cron: "30 7,8,9 * * *"   # 1–3 PM IST
+    # 2:30 PM – 3:00 PM IST (09:00–09:30 UTC)
+    - cron: "30-59 9 * * *"
   workflow_dispatch:
 
 jobs:
@@ -16,20 +17,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Random delay (only for scheduled runs)
+      # Random delay ONLY for scheduled runs
+      - name: Random delay
         if: github.event_name == 'schedule'
         run: |
-          DELAY=$((RANDOM % 3600))
-          echo "Sleeping for $DELAY seconds to randomize execution"
+          DELAY=$((RANDOM % 1800))
+          echo "Sleeping for $DELAY seconds"
           sleep $DELAY
 
-      - name: Skip rules (only for scheduled runs)
+      # Skip rules ONLY for scheduled runs
+      - name: Skip weekends, holidays, duplicate runs
         if: github.event_name == 'schedule'
         run: |
           TODAY=$(date +"%Y-%m-%d")
           DAY=$(date +%u)
 
-          # Weekend
+          # Weekend check
           if [ "$DAY" -eq 6 ] || [ "$DAY" -eq 7 ]; then
             echo "Weekend detected. Skipping."
             exit 0
@@ -54,7 +57,7 @@ jobs:
             fi
           done
 
-          # Run once per day
+          # Run only once per day
           if [ -f .github/last-run.txt ] && grep -q "$TODAY" .github/last-run.txt; then
             echo "Already executed today. Skipping."
             exit 0
@@ -65,15 +68,17 @@ jobs:
           TODAY_HUMAN=$(date +"%d %b %Y")
           sed -i "30s/.*/No updates so far as of $TODAY_HUMAN/" README.md
 
+      # Record execution date ONLY for scheduled runs
       - name: Record execution date
         if: github.event_name == 'schedule'
         run: |
+          mkdir -p .github
           date +"%Y-%m-%d" > .github/last-run.txt
 
       - name: Commit and push changes
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "Kousikx"
+          git config user.email "kousikx300@gmail.com"
 
           git add README.md
 
