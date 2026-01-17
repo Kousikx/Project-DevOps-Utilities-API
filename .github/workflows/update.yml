@@ -13,6 +13,9 @@ jobs:
   update-readme:
     runs-on: ubuntu-latest
 
+    env:
+      TZ: Asia/Kolkata   # ✅ FORCE IST TIMEZONE
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -26,40 +29,80 @@ jobs:
           sleep $DELAY
 
       # Skip rules ONLY for scheduled runs
-      - name: Skip weekends, holidays, duplicate runs
+      - name: Skip weekends, Indian holidays, duplicate runs
         if: github.event_name == 'schedule'
         run: |
           TODAY=$(date +"%Y-%m-%d")
           DAY=$(date +%u)
 
-          # Weekend check
+          echo "IST Date: $TODAY"
+          echo "IST Day Number: $DAY"
+
+          # Weekend check (IST-based)
           if [ "$DAY" -eq 6 ] || [ "$DAY" -eq 7 ]; then
-            echo "Weekend detected. Skipping."
+            echo "Weekend detected (IST). Skipping."
             exit 0
           fi
 
-          # Indian public holidays
+          # Indian public holidays (IST-based)
           HOLIDAYS=(
             "2026-01-26"
+            "2026-01-28"
+            "2026-02-03"
+            "2026-02-17"
+            "2026-02-24"
             "2026-03-06"
+            "2026-03-11"
+            "2026-03-23"
+            "2026-03-31"
             "2026-04-14"
+            "2026-04-15"
+            "2026-04-28"
             "2026-05-01"
+            "2026-05-08"
+            "2026-05-18"
+            "2026-05-28"
+            "2026-06-02"
+            "2026-06-10"
+            "2026-06-18"
+            "2026-06-23"
+            "2026-07-01"
+            "2026-07-07"
+            "2026-07-16"
+            "2026-07-28"
+            "2026-08-05"
             "2026-08-15"
+            "2026-08-17"
+            "2026-08-28"
+            "2026-09-02"
+            "2026-09-07"
+            "2026-09-10"
+            "2026-09-22"
+            "2026-09-28"
             "2026-10-02"
+            "2026-10-08"
             "2026-10-20"
+            "2026-10-22"
+            "2026-11-02"
+            "2026-11-05"
+            "2026-11-17"
+            "2026-11-26"
+            "2026-12-11"
+            "2026-12-17"
+            "2026-12-21"
             "2026-12-25"
           )
 
           for holiday in "${HOLIDAYS[@]}"; do
-            if [ "$TODAY" == "$holiday" ]; then
-              echo "Indian public holiday detected. Skipping."
+            if [ "$TODAY" = "$holiday" ]; then
+              echo "Indian public holiday detected ($TODAY). Skipping."
               exit 0
             fi
           done
 
-          # Run only once per day
+          # Run only once per day (IST)
           if [ -f .github/last-run.txt ] && grep -q "$TODAY" .github/last-run.txt; then
-            echo "Already executed today. Skipping."
+            echo "Already executed today (IST). Skipping."
             exit 0
           fi
 
