@@ -7,6 +7,7 @@ on:
   schedule:
     # 2:30 PM – 3:00 PM IST (09:00–09:30 UTC)
     - cron: "30-59 9 * * *"
+  workflow_dispatch:   # ✅ Manual trigger for testing
 
 jobs:
   update-readme:
@@ -19,18 +20,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 🔒 GATEKEEPER STEP
-      - name: Check weekday & Indian holidays
-        id: gate
+      # 🔒 GATEKEEPER STEP (single source of truth)
+      - name: Decide whether to proceed
         run: |
+          # Default: do NOT proceed
+          echo "PROCEED=false" >> $GITHUB_ENV
+
+          # ✅ Manual run → always allow (testing)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Manual trigger detected. Proceeding."
+            echo "PROCEED=true" >> $GITHUB_ENV
+            exit 0
+          fi
+
           TODAY=$(date +"%Y-%m-%d")
           DAY=$(date +%u)
 
           echo "IST Date: $TODAY"
           echo "IST Day: $DAY"
-
-          # Default: DO NOT PROCEED
-          echo "PROCEED=false" >> $GITHUB_ENV
 
           # Weekend check
           if [ "$DAY" -eq 6 ] || [ "$DAY" -eq 7 ]; then
@@ -67,23 +74,22 @@ jobs:
 
           # ✅ All checks passed
           echo "PROCEED=true" >> $GITHUB_ENV
-          echo "All checks passed. Proceeding."
+          echo "Weekday & not a holiday. Proceeding."
 
-      # ⏱ Random delay (ONLY if allowed)
+      # ⏱ Random delay (scheduled runs only)
       - name: Random delay
-        if: env.PROCEED == 'true'
+        if: env.PROCEED == 'true' && github.event_name == 'schedule'
         run: |
-          DELAY=$((RANDOM % 1800))
-          sleep $DELAY
+          sleep $((RANDOM % 1800))
 
-      # ✏️ Update README (ONLY if allowed)
+      # ✏️ Update README
       - name: Update README
         if: env.PROCEED == 'true'
         run: |
           TODAY_HUMAN=$(date +"%d %b %Y")
           sed -i "30s/.*/No updates so far as of $TODAY_HUMAN/" README.md
 
-      # 💾 Commit & push (ONLY if allowed)
+      # 💾 Commit & push
       - name: Commit and push changes
         if: env.PROCEED == 'true'
         run: |
