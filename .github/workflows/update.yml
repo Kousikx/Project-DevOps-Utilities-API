@@ -1,4 +1,4 @@
-name: Update README (Random Time)
+name: Update README (Weekdays Only)
 
 permissions:
   contents: write
@@ -7,44 +7,38 @@ on:
   schedule:
     # 2:30 PM – 3:00 PM IST (09:00–09:30 UTC)
     - cron: "30-59 9 * * *"
-  workflow_dispatch:
 
 jobs:
   update-readme:
     runs-on: ubuntu-latest
 
     env:
-      TZ: Asia/Kolkata   # ✅ FORCE IST TIMEZONE
+      TZ: Asia/Kolkata
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Random delay ONLY for scheduled runs
-      - name: Random delay
-        if: github.event_name == 'schedule'
-        run: |
-          DELAY=$((RANDOM % 1800))
-          echo "Sleeping for $DELAY seconds"
-          sleep $DELAY
-
-      # Skip rules ONLY for scheduled runs
-      - name: Skip weekends, Indian holidays, duplicate runs
-        if: github.event_name == 'schedule'
+      # 🔒 GATEKEEPER STEP
+      - name: Check weekday & Indian holidays
+        id: gate
         run: |
           TODAY=$(date +"%Y-%m-%d")
           DAY=$(date +%u)
 
           echo "IST Date: $TODAY"
-          echo "IST Day Number: $DAY"
+          echo "IST Day: $DAY"
 
-          # Weekend check (IST-based)
+          # Default: DO NOT PROCEED
+          echo "PROCEED=false" >> $GITHUB_ENV
+
+          # Weekend check
           if [ "$DAY" -eq 6 ] || [ "$DAY" -eq 7 ]; then
-            echo "Weekend detected (IST). Skipping."
+            echo "Weekend detected. Stopping workflow."
             exit 0
           fi
 
-          # Indian public holidays (IST-based)
+          # Indian public holidays
           HOLIDAYS=(
             "2026-01-26"
             "2026-01-28"
@@ -57,77 +51,45 @@ jobs:
             "2026-03-31"
             "2026-04-14"
             "2026-04-15"
-            "2026-04-28"
             "2026-05-01"
-            "2026-05-08"
-            "2026-05-18"
-            "2026-05-28"
-            "2026-06-02"
-            "2026-06-10"
-            "2026-06-18"
-            "2026-06-23"
-            "2026-07-01"
-            "2026-07-07"
-            "2026-07-16"
-            "2026-07-28"
-            "2026-08-05"
             "2026-08-15"
-            "2026-08-17"
-            "2026-08-28"
-            "2026-09-02"
-            "2026-09-07"
-            "2026-09-10"
-            "2026-09-22"
-            "2026-09-28"
             "2026-10-02"
-            "2026-10-08"
             "2026-10-20"
-            "2026-10-22"
-            "2026-11-02"
-            "2026-11-05"
-            "2026-11-17"
-            "2026-11-26"
-            "2026-12-11"
-            "2026-12-17"
-            "2026-12-21"
             "2026-12-25"
           )
 
           for holiday in "${HOLIDAYS[@]}"; do
             if [ "$TODAY" = "$holiday" ]; then
-              echo "Indian public holiday detected ($TODAY). Skipping."
+              echo "Indian public holiday detected. Stopping workflow."
               exit 0
             fi
           done
 
-          # Run only once per day (IST)
-          if [ -f .github/last-run.txt ] && grep -q "$TODAY" .github/last-run.txt; then
-            echo "Already executed today (IST). Skipping."
-            exit 0
-          fi
+          # ✅ All checks passed
+          echo "PROCEED=true" >> $GITHUB_ENV
+          echo "All checks passed. Proceeding."
 
+      # ⏱ Random delay (ONLY if allowed)
+      - name: Random delay
+        if: env.PROCEED == 'true'
+        run: |
+          DELAY=$((RANDOM % 1800))
+          sleep $DELAY
+
+      # ✏️ Update README (ONLY if allowed)
       - name: Update README
+        if: env.PROCEED == 'true'
         run: |
           TODAY_HUMAN=$(date +"%d %b %Y")
           sed -i "30s/.*/No updates so far as of $TODAY_HUMAN/" README.md
 
-      # Record execution date ONLY for scheduled runs
-      - name: Record execution date
-        if: github.event_name == 'schedule'
-        run: |
-          mkdir -p .github
-          date +"%Y-%m-%d" > .github/last-run.txt
-
+      # 💾 Commit & push (ONLY if allowed)
       - name: Commit and push changes
+        if: env.PROCEED == 'true'
         run: |
           git config user.name "Kousikx"
           git config user.email "kousikx300@gmail.com"
 
           git add README.md
-
-          if [ -f .github/last-run.txt ]; then
-            git add .github/last-run.txt
-          fi
-
-          git commit -m "chore: daily README update" || exit 0
+          git commit -m "chore: daily README update"
           git push
